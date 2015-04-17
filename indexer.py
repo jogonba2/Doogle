@@ -93,7 +93,7 @@ def indexer(path,index_file,stopwords,stemming):
 			notice_hash           = add_to_dict(notice_hash,[posid],(docid,notice_title,notice_date,notice_category))
 			posid += 1
 		docid += 1
-	save_object((doc_hash,notice_terms_index,notice_title_index,notice_date_index,notice_category_index),index_file)
+	save_object((doc_hash,notice_hash,notice_terms_index,notice_title_index,notice_date_index,notice_category_index),index_file)
 	
 	
 # Entry point #
