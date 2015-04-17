@@ -9,7 +9,6 @@ try: import cPickle as pickle
 except: import pickle
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
-from nltk.probability import * 
 
 # USAGE #
 def usage(): print """Usage: python indexer.py directorio fichero_indice stopwords stemming\n
