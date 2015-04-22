@@ -13,9 +13,9 @@ except: from pickle import dump,HIGHEST_PROTOCOL
 
 # USAGE #
 def usage(): print """Usage: python indexer.py directorio fichero_indice stopwords stemming\n
-\t-> directorio: Indica el directorio de los documentos\n\t-> fichero_indice: Indica el fichero donde se salvara el indice
-\t-> stopwords: Indica si se eliminaran stopwords [SI\NO]\n\t-> stemming: Indica si se realizara stemming [SI\NO]\n
--> Las opciones stopwords y stemming incrementaran el coste temporal de la indexacion\n
+    -> directorio: Indica el directorio de los documentos\n    -> fichero_indice: Indica el fichero donde se salvara el indice
+    -> stopwords: Indica si se eliminaran stopwords [SI\NO]\n    -> stemming: Indica si se realizara stemming [SI\NO]\n
+    -> Las opciones stopwords y stemming incrementaran el coste temporal de la indexacion\n
 """
 
 # Elimina caracteres no alfanumericos #
@@ -75,10 +75,10 @@ def indexer(path,index_file,stopwords,stemming):
 			notice_date    		  = extract_notice_data(notice,"DATE")
 			notice_category 	  = extract_notice_data(notice,"CATEGORY")
 			notice_text     	  = extract_notice_data(notice,"TEXT")
-			notice_text_terms     = term_extractor(delete_non_alphanumeric(notice_text),stopwords,stemming)
-			notice_title_terms    = term_extractor(delete_non_alphanumeric(notice_title),stopwords,stemming)
-			notice_date_terms     = term_extractor(delete_non_alphanumeric(notice_date),stopwords,stemming)
-			notice_category_terms = term_extractor(delete_non_alphanumeric(notice_category),stopwords,stemming)
+			notice_text_terms     = list(set(term_extractor(delete_non_alphanumeric(notice_text),stopwords,stemming)))
+			notice_title_terms    = list(set(term_extractor(delete_non_alphanumeric(notice_title),stopwords,stemming)))
+			notice_date_terms     = list(set(term_extractor(delete_non_alphanumeric(notice_date),stopwords,stemming)))
+			notice_category_terms = list(set(term_extractor(delete_non_alphanumeric(notice_category),stopwords,stemming)))
 			notice_terms_index    = add_to_dict(notice_terms_index,notice_text_terms,(docid,posid))
 			notice_title_index    = add_to_dict(notice_title_index,notice_title_terms,(docid,posid))
 			notice_date_index     = add_to_dict(notice_date_index,notice_date_terms,(docid,posid))
@@ -87,7 +87,7 @@ def indexer(path,index_file,stopwords,stemming):
 			posid += 1
 		docid += 1
 	save_object((doc_hash,notice_terms_index,notice_title_index,notice_date_index,notice_category_index,notice_hash),index_file)
-		
+	
 # Entry point #
 if __name__ == "__main__":
 	if len(argv)<5 or argv[3].lower() not in ["si","no"] or argv[4].lower() not in ["si","no"]: usage(); exit()
