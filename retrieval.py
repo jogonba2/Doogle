@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Authors: Jose & Alberto #
+
 from sys import argv
 try: import cPickle as pickle
 except: import pickle
