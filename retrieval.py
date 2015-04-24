@@ -19,7 +19,7 @@ from re import findall
 # USAGE #
 def usage(): print """Usage: python retrieval.py fichero_indice opciones\n
     -> fichero_indice: Indica el fichero de donde se cargará el indice
-    -> opciones: Indica si se no se hara nada (0, eliminar stopwords(1), stemming(2) o los 2 (3)\n"""
+    -> opciones: Indica si se eliminaran stopwords (0), stemming(1) o los 2 (2)\n"""
 
 def load_object(source):
 	with open(source,'rb') as fd:
@@ -49,10 +49,43 @@ def remove_stopwords(text, language='spanish'): return [w for w in text if w.low
 # Hacer stemming a cada palabra de la query #
 def make_stemming(text,stemmer): print text;return [stemmer.stem(word) for word in text]
 
-#Comprobar si la query está correctamente formada, y devolver la query correcta#
+#Comprobar si la query tiene todas las operaciones necesarias, y devolver la query correspondiente #
+def correct_operations(query):
+	query_op, term1,term2 = [query.pop(0)],"",""
+	while(not query == []):
+		term1= query.pop(0)
+		aux = query_op[-1]
+		if(aux=="and" or aux=="or" and term1=="not"): query_op.append(term1)
+		elif(aux=="not"): query_op.append(term1)
+		elif(aux=="headline" or aux=="text" or aux=="category" or aux=="date"): query_op.append(term1)
+		elif(term1=="and" or term1=="or" and not aux=="and" and not aux=="or" and not aux=="not"): query_op.append(term1)
+		else:
+			query_op.append("and")
+			query_op.append(term1)
+	return query_op
+	
+#Comprobar si la query está correctamente formada, y devolver la query correcta #
 def take_correct_query(query):
-    pass
-
+	query_correct,term1,term2 = [],"",""
+	#print query
+	while(not query==[]):
+		term1 = query.pop(0)
+		if(not query==[] and term1=="headline" or term1=="text" or term1=="category" or term1=="date"):
+			term2 = query.pop(0)
+			if(term2=="and" or term2=="or"):
+				if(not query==[] and query[0]=="not"): query.pop(0)
+			else: 
+				query_correct.append(term1+":"+term2)
+				if(not query==[]):query_correct.append(query.pop(0))
+				if(not query==[] and query[0]=="not"): query_correct.append(query.pop(0))
+		elif(term1=="and" or term1=="or"):
+			if(not query==[] and query[0]=="not"): query.pop(0)
+		else: 
+			query_correct.append(term1)
+			if(not query==[]):query_correct.append(query.pop(0))
+			if(not query==[] and query[0]=="not"): query_correct.append(query.pop(0))
+	return query_correct
+		
 def get_notice_text(file_text,notice_title):
 	notice_pos        = file_text.find(notice_title)
 	# Extraer inicio del texto de la noticia #
@@ -64,7 +97,7 @@ def get_notice_text(file_text,notice_title):
 def show_results(posting_list_result,index,query_terms):
 	# Si no hay resultados, mostrar mensaje de no resultados #
 	if len(posting_list_result)==0:
-		print "[-] There aren't results for that search."
+		print "[-] There aren't results for terms: ",query_terms
 		
 	# Si solo hay una o 2 noticias relevantes, mostrar el título y el cuerpo de la noticia #
 	elif len(posting_list_result) in range(1,3):
@@ -112,15 +145,15 @@ def retriever(index_file, deleting):
 	query,term1,term2,op,posting_list_result,posting_list_aux,search1,search2 = None,"","","",[],[],"",""
 	index = load_object(index_file)
 	while(True):
-		query = raw_input("What are you looking for? -> ").lower()
-		query_terms = extract_query_terms(query)
-		query = query.split(" ")
+		query = raw_input("What are you looking for? -> ").replace(":"," ").split(" ")
+		query = correct_operations(query)
 		print "\n"
 		if(deleting == 1):   query = remove_stopwords(query)
 		elif(deleting == 2): query = make_stemming(query, SnowballStemmer("spanish"))
 		elif(deleting == 3): query = make_stemming(remove_stopwords(query), SnowballStemmer("spanish"))
 		if(query==['']): print "[-] You are looking for nothing.\n"; break
-		#query = take_correct_query(query)
+		query = take_correct_query(query)
+		query_terms = extract_query_terms(" ".join(query))
 		term1 = query.pop(0)
 		if(":" in term1): 
 			search1 = term1.split(":")[0]
@@ -143,4 +176,4 @@ def retriever(index_file, deleting):
 if __name__ == "__main__":
 	#if len(argv)<3 or int(argv[2]) not in [0,1,2,3]: usage(); exit()
 	#retriever(argv[1],int(argv[2]))
-	retriever("indexfile",0)
+	retriever("indexfile",1)
