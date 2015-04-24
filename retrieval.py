@@ -10,11 +10,8 @@ from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 from re import findall
 
-
-# Hay que eliminar stopwords y hacer stemming si se indica como parámetro #
 # Arreglar problemas UNICODE #
-# Arreglar las consultas #
-# Caso: headline:messi valencia -> encadenar AND entre términos #
+# Solucionar dudas con índice y stems en el mismo fichero #
 
 # USAGE #
 def usage(): print """Usage: python retrieval.py fichero_indice opciones\n
@@ -47,7 +44,7 @@ def take_posting_list(term, search,index):
 def remove_stopwords(text, language='spanish'): return [w for w in text if w.lower() not in stopwords.words(language)]
 
 # Hacer stemming a cada palabra de la query #
-def make_stemming(text,stemmer): print text;return [stemmer.stem(word) for word in text]
+def make_stemming(text,stemmer): return [stemmer.stem(word) for word in text if word!="headline" and word!="date"] # Parche guarro, apañar #
 
 #Comprobar si la query tiene todas las operaciones necesarias, y devolver la query correspondiente #
 def correct_operations(query):
@@ -154,6 +151,7 @@ def retriever(index_file, deleting):
 		if(query==['']): print "[-] You are looking for nothing.\n"; break
 		query = take_correct_query(query)
 		query_terms = extract_query_terms(" ".join(query))
+		if query==[]: print "[-] Words removed because they are stopwords, throw another query.\n" ; continue			
 		term1 = query.pop(0)
 		if(":" in term1): 
 			search1 = term1.split(":")[0]
@@ -174,6 +172,6 @@ def retriever(index_file, deleting):
 
 # Entry point #
 if __name__ == "__main__":
-	#if len(argv)<3 or int(argv[2]) not in [0,1,2,3]: usage(); exit()
-	#retriever(argv[1],int(argv[2]))
-	retriever("indexfile",1)
+	if len(argv)<3 or int(argv[2]) not in [0,1,2,3]: usage(); exit()
+	retriever(argv[1],int(argv[2]))
+	#retriever("indexfile",1)
