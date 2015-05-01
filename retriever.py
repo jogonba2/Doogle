@@ -10,6 +10,7 @@ from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 from re import sub,findall
 from time import time
+from os import system,name
 
 STOPWORDS = [x for x in stopwords.words('spanish')]
 STEMMER   = SnowballStemmer("spanish")
@@ -19,6 +20,21 @@ def usage(): print """Usage: python retrieval.py fichero_indice opciones\n
     -> fichero_indice: Indica el fichero de donde se cargará el indice
     -> opciones: Indica si no se hara nada (0), stopwords (1), stemming(2) o los 2 (3)\n"""
 
+# HEADER #
+def header():
+	print """  ___   ___   ___   ___ _    ___ 
+ |   \ / _ \ / _ \ / __| |  | __|
+ | |) | (_) | (_) | (_ | |__| _| 
+ |___/ \___/ \___/ \___|____|___|
+                                 
+ↄ Alberto Donet, J.A González.
+
+"""
+# Limpiar terminal #
+def cls():
+    system(['clear','cls'][name == 'nt'])
+
+# Persistencia #
 def load_object(source):
 	with open(source,'rb') as fd:
 		obj = pickle.load(fd)
@@ -27,7 +43,7 @@ def load_object(source):
 	# index[0] -> doc-hash: identificador doc - nombre de documento (relacion numero de dcumento con su fichero) #
 	# index[1] -> noticia-term: termino-(docID,posID) (sobre el texto de la noticia) #
 	# index[2] -> notice-title-index: lo mismo pero solo en el titulo #
-	# index[3] -> notice-date-index: lo mimso pero con fecha #
+	# index[3] -> notice-date-index: lo mismo pero con fecha #
 	# index[4] -> notice-category-index: lo mismo pero sobre categoria #
 	# index[5] -> notice-hash: buscas posicion de noticia- informacion asociada (titulo,...) #
 	# index[6] -> notice-text: texto de la noticia #
@@ -66,6 +82,8 @@ def correct_operations(query):
 #Comprobar si la query está correctamente formada, y devolver la query correcta #
 def take_correct_query(query):
 	query_correct,term1,term2 = [],"",""
+	if query[0]=="and" or query[0]=="or": query.pop(0)
+	if query[0]=="not": query.pop(0)
 	while(not query==[]):
 		term1 = query.pop(0)
 		if(not query==[] and term1=="headline" or term1=="text" or term1=="category" or term1=="date"):
@@ -85,7 +103,7 @@ def take_correct_query(query):
 			if(not query==[]):query_correct.append(query.pop(0))
 			if(not query==[] and query[0]=="not"): query_correct.append(query.pop(0))
 	return query_correct
-	
+
 def show_results(posting_list_result,index,query_terms,query_time):
 	# Si no hay resultados, mostrar mensaje de no resultados #
 	if len(posting_list_result)==0:
@@ -123,6 +141,7 @@ def show_results(posting_list_result,index,query_terms,query_time):
 			print index[5][noticeid[1]][0][1] # Mostrar titulo	
 			c += 1
 	print len(posting_list_result),"results in",query_time,"ms\n"
+
 # Extrae los terminos de la consulta #
 def extract_query_terms(query):
 	terms = []
@@ -135,21 +154,34 @@ def extract_query_terms(query):
 # Elimina caracteres no alfanumericos #
 def delete_non_alphanumeric(text): return sub(u"[^\wáéíóúñçàèìòù]",u" ",text)
 
+
+# Retorna una lista de postings ordenados por mayor valor según el coeficiente de Jaccard (solo cuando la busqueda es sin stemming) #
+def sort_doc(index,postings_list,query_terms):
+	res = []
+	for posting in postings_list:
+		notice_text = set(sub(u"[^\wáéíóúñçàèìòù]",u" ",index[6][posting]).split(" "))
+		query_terms = set(query_terms)
+		jacc_coef   = float(len(notice_text.intersection(query_terms))) / len(notice_text.union(query_terms))
+		res.append((posting,jacc_coef))
+	res.sort(key = lambda x: x[1],reverse=True)
+	return [tup[0] for tup in res]
+		
+
 def retriever(index_file, deleting):
 	query,term1,term2,op,posting_list_result,posting_list_aux,search1,search2 = None,"","","",[],[],"",""
 	index = load_object(index_file)	
 	while(True):
+		cls()
+		header()
 		query = delete_non_alphanumeric(raw_input("What are you looking for? -> ").replace(":"," ").lower().decode("utf-8")).split(" ")		
 		print "\n"
 		init_time = time()		
 		query = correct_operations(query)
-		print "Correct query:",query
 		if(deleting   == 1): query = remove_stopwords(query)
 		elif(deleting == 2): query = make_stemming(query, STEMMER)
 		elif(deleting == 3): query = make_stemming(remove_stopwords(query), STEMMER)
 		if(query==['']): print "[-] You are looking for nothing.\n"; break
-		query = take_correct_query(query)
-		print "Processed query:",query		
+		query = take_correct_query(query)		
 		query_terms = extract_query_terms(" ".join(query))
 		if query==[]: print "[-] Words removed because they are stopwords, run another query.\n" ; continue			
 		term1 = query.pop(0)
@@ -169,8 +201,11 @@ def retriever(index_file, deleting):
 			posting_list_aux = take_posting_list(term2,search2,index)
 			posting_list_result = postings_operations._parse_operation(op,posting_list_result, posting_list_aux)
 		end_time = time()
-		show_results(posting_list_result,index,query_terms,(end_time-init_time))
-
+		if deleting!=2 and deleting!=3:	show_results(sort_doc(index,posting_list_result,query_terms),index,query_terms,(end_time-init_time))
+		else: show_results(posting_list_result,index,query_terms,(end_time-init_time))
+		print "\nPlease, press [Enter] to research\n"
+		raw_input()
+		
 # Entry point #
 if __name__ == "__main__":
 	if len(argv)<3 or int(argv[2]) not in [0,1,2,3]: usage(); exit()
