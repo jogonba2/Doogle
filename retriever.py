@@ -62,20 +62,23 @@ def take_posting_list(term, search,index):
 def remove_stopwords(text, language='spanish'): return [w for w in text if w.lower() not in STOPWORDS]
 
 # Hacer stemming a cada palabra de la query #
-def make_stemming(text,stemmer): return [stemmer.stem(word) for word in text if word!="headline" and word!="date"]
+def make_stemming(text,stemmer): 
+	res = []
+	for word in text:
+		if word!="headline" and word!="date": res.append(stemmer.stem(word))
+		else: res.append(word)
+	return res
 
 #Comprobar si la query tiene todas las operaciones necesarias, y devolver la query correspondiente #
 def correct_operations(query):
-	query_op, term1,term2 = [query.pop(0)],"",""
+	query_op, term1,aux = [query.pop(0)],"",""
 	while(not query == []):
 		term1= query.pop(0)
 		aux = query_op[-1]
-		if(aux=="and" or aux=="or" and term1=="not"): query_op.append(term1)
-		elif(aux=="not"): query_op.append(term1)
-		elif(aux=="headline" or aux=="text" or aux=="category" or aux=="date"): query_op.append(term1)
-		elif(term1=="and" or term1=="or" and not aux=="and" and not aux=="or" and not aux=="not"): query_op.append(term1)
-		else:
+		if(not aux=="headline" and not aux=="date" and not aux=="text" and not aux=="category"  and not aux=="and" and not aux=="or" and not aux=="not" and not term1=="and" and not term1=="or"):
 			query_op.append("and")
+			query_op.append(term1)
+		else:
 			query_op.append(term1)
 	return query_op
 	
@@ -175,15 +178,15 @@ def retriever(index_file, deleting):
 		header()
 		query = delete_non_alphanumeric(raw_input("What are you looking for? -> ").replace(":"," ").lower().decode("utf-8")).split(" ")		
 		print "\n"
-		init_time = time()		
+		init_time = time()	
 		query = correct_operations(query)
 		if(deleting   == 1): query = remove_stopwords(query)
 		elif(deleting == 2): query = make_stemming(query, STEMMER)
 		elif(deleting == 3): query = make_stemming(remove_stopwords(query), STEMMER)
-		if(query==['']): print "[-] You are looking for nothing.\n"; break
+		if(query==[''] or query==[]): print "[-] You are looking for nothing.\n\nPlease, press [Enter] to research\n"; raw_input(); continue	
 		query = take_correct_query(query)		
 		query_terms = extract_query_terms(" ".join(query))
-		if query==[]: print "[-] Words removed because they are stopwords, run another query.\n" ; continue			
+		if query==[]: print "[-] Words removed because they are stopwords, run another query.\n\nPlease, press [Enter] to research\n" ; raw_input(); continue			
 		term1 = query.pop(0)
 		if(":" in term1): 
 			search1 = term1.split(":")[0]
