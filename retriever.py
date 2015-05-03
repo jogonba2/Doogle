@@ -16,7 +16,7 @@ STOPWORDS = [x for x in stopwords.words('spanish')]
 STEMMER   = SnowballStemmer("spanish")
 
 # USAGE #
-def usage(): print """Usage: python retrieval.py fichero_indice opciones\n
+def usage(): print """Usage: python retriever.py fichero_indice opciones\n
     -> fichero_indice: Indica el fichero de donde se cargará el indice
     -> opciones: Indica si no se hara nada (0), stopwords (1), stemming(2) o los 2 (3)\n"""
 
